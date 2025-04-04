@@ -53,7 +53,7 @@ async function run() {
     const userCollection=database.collection("users");
     const classesCollection=database.collection("classes");
     const cartCollection=database.collection("cart");
-    const paymentCollection=database.collection("payment");
+    const paymentCollection=database.collection("payments");
     const enrolledCollection=database.collection("enroll");
     const appliedCollection=database.collection("applied");
 
@@ -90,7 +90,10 @@ async function run() {
     app.post('/api/set-token', (req, res) => {
             const user = req.body;
             const token = jwt.sign(user, process.env.ACCESS_SECRET, { expiresIn: '24h' })
-            res.send({ token })
+           
+      res.send({ token })
+      console.log({token})
+      console.log("token is generated")
         })
 
     
@@ -266,8 +269,17 @@ app.get('/approved-classes',async(req,res)=>{
   console.log("single id called")
   res.send(result);
  })
+    
+    // to get all instructors
+     app.get('/instructors', async (req, res) => {
+            const query = { role: 'instructor' };
+            const result = await userCollection.find(query).toArray();
+            res.send(result);
+        })
 
  //updated api entirely
+
+    
 
 
  //cart Route !...
@@ -288,6 +300,54 @@ app.get('/approved-classes',async(req,res)=>{
             res.send(result);
         })
 
+
+    //payment routes
+    app.get("/payments", async (req, res) => {
+      const query={status:"approved"}
+      const result = await paymentCollection.find().toArray();
+      console.log("payment is live");
+      res.send(result);
+   })
+
+    app.post('/payment-info', async (req, res) => {
+      const paymentInfo = req.body;
+      const classesId = paymentInfo.classId;
+      const userEmail = paymentInfo.userEmail;
+      const singleClassId = req.query.classId;
+      let query;
+      if (singleClassId) {
+        query = { classId: singleClassId, userMail: userEmail };
+      } else {
+        query={classId:{$in:classesId}}
+      }
+
+      const classesQuery = { _id: { $in: classesId.map(id => new Object(id)) } }
+      const classes = await classesCollection.find(classesQuery).toArray();
+      const newEnrolledData = {
+        userEmail: userEmail,
+        classesId: classesId.map(id => new Object(id)),
+        transaction:paymentInfo.transactionId,
+      }
+
+      const updateDoc = {
+        $set: {
+          totalEnrolled: classes.reduce((total, current) => total + current.totalEnrolled, 0) + 1 || 0,
+          availableSeats:classes.reduce((total,current)=>total+current.totalEnrolled,0)-1 ||0,
+        }
+      }
+
+      const updateResult = await classesCollection.updateMany(classesQuery, updateDoc, { upsert: true });
+      const enrolledResult = await enrolledCollection.insertOne(newEnrolledDate);
+      const deletedResult = await cartCollection.deleteMany(query);
+      const paymentResult = await paymentCollection.insertOne(paymentInfo);
+      res.send({ paymentResult, deletedResult, enrolledResult, updateResult });
+    })
+     app.get('/payment-history/:email', async (req, res) => {
+            const email = req.params.email;
+            const query = { userEmail: email };
+            const result = await paymentCollection.find(query).sort({ date: -1 }).toArray();
+            res.send(result);
+        })
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
