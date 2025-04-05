@@ -34,7 +34,7 @@ const verifyJWT = (req, res, next) => {
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@yogamaster.jzupr.mongodb.net/?retryWrites=true&w=majority&appName=yogamaster`;
 
-// Create a MongoClient with a MongoClientOptions object to set the Stable API version
+// Creating a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
@@ -45,7 +45,7 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-    // Connect the client to the server	(optional starting in v4.7)
+    // Connect the client to the server	
     await client.connect();
 
     //create a database and collections
@@ -57,7 +57,7 @@ async function run() {
     const enrolledCollection=database.collection("enroll");
     const appliedCollection=database.collection("applied");
 
-
+// Middleware Functions
     const verifyAdmin = async (req, res, next) => {
       const email = req.decoded.email;
       const query = { email: email };
@@ -151,16 +151,16 @@ app.post('/register', async (req, res) => {
             phone,
             about,
             skills,
-            password: hashedPassword,  // Store hashed password
+            password: hashedPassword,  
         };
 
-        // Insert user into MongoDB
+       
         const result = await userCollection.insertOne(newUser);
 
         // Generate JWT Token
         const token = jwt.sign(
             { userId: result.insertedId, email, role },
-            process.env.JWT_SECRET || "yourSecretKey",
+            process.env.ACCESS_SECRET || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImtvdGVzd2FyYXJhbzEyMyIsImFnZSI6IjI0IiwiaWF0IjoxNzQzODI5MDIxLCJleHAiOjE3NDM5MTU0MjF9.Xx6PTZCckCNEtlM5UWCsacbLrZeR72OtPb4NgEEWwWA",
             { expiresIn: "1h" }
         );
       console.log("user Register.....!");
@@ -180,13 +180,13 @@ app.post('/register', async (req, res) => {
     const { email, password } = req.body;
 
     try {
-        // Find user by email
+       
         const user = await userCollection.findOne({ email });
         if (!user) {
             return res.status(400).json({ message: "User not found" });
         }
 
-        // Compare password with the hashed password in database
+       
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
             return res.status(400).json({ message: "Invalid credentials" });
@@ -195,7 +195,7 @@ app.post('/register', async (req, res) => {
         // Generate JWT Token
         const token = jwt.sign(
             { userId: user._id, email: user.email, role: user.role },
-            process.env.JWT_SECRET || "yourSecretKey", // Secret key from .env
+            process.env.ACCESS_SECRET || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImtvdGVzd2FyYXJhbzEyMyIsImFnZSI6IjI0IiwiaWF0IjoxNzQzODI5MDIxLCJleHAiOjE3NDM5MTU0MjF9.Xx6PTZCckCNEtlM5UWCsacbLrZeR72OtPb4NgEEWwWA", // Secret key from .env
             { expiresIn: "1h" }  // Token expires in 1 hour
         );
       console.log(token);
@@ -209,7 +209,7 @@ app.post('/register', async (req, res) => {
 
     
 //classes routes here
-app.post('/new-class',verifyJWT,verifyAdmin,async(req,res)=>{
+app.post('/new-class',verifyJWT,verifyInstructor,async(req,res)=>{
     const newClass=req.body;
     const result=await classesCollection.insertOne(newClass);
     res.send(result);
