@@ -311,7 +311,7 @@ app.get('/approved-classes',async(req,res)=>{
 
     app.post('/payment-info', async (req, res) => {
       const paymentInfo = req.body;
-      const classesId = paymentInfo.classId;
+      const classesId = paymentInfo.classesId;
       const userEmail = paymentInfo.userEmail;
       const singleClassId = req.query.classId;
       let query;
@@ -321,11 +321,11 @@ app.get('/approved-classes',async(req,res)=>{
         query={classId:{$in:classesId}}
       }
 
-      const classesQuery = { _id: { $in: classesId.map(id => new Object(id)) } }
+      const classesQuery = { _id: { $in: classesId.map(id => new ObjectId(id)) } }
       const classes = await classesCollection.find(classesQuery).toArray();
       const newEnrolledData = {
         userEmail: userEmail,
-        classesId: classesId.map(id => new Object(id)),
+        classesId: classesId.map(id => new ObjectId(id)),
         transaction:paymentInfo.transactionId,
       }
 
@@ -337,10 +337,11 @@ app.get('/approved-classes',async(req,res)=>{
       }
 
       const updateResult = await classesCollection.updateMany(classesQuery, updateDoc, { upsert: true });
-      const enrolledResult = await enrolledCollection.insertOne(newEnrolledDate);
+      const enrolledResult = await enrolledCollection.insertOne(newEnrolledData);
       const deletedResult = await cartCollection.deleteMany(query);
       const paymentResult = await paymentCollection.insertOne(paymentInfo);
       res.send({ paymentResult, deletedResult, enrolledResult, updateResult });
+      console.log("payment-info api is called")
     })
      app.get('/payment-history/:email', async (req, res) => {
             const email = req.params.email;
