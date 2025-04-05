@@ -55,7 +55,7 @@ async function run() {
     const cartCollection=database.collection("cart");
     const paymentCollection=database.collection("payments");
     const enrolledCollection=database.collection("enroll");
-    const appliedCollection=database.collection("applied");
+   
 
 // Middleware Functions
     const verifyAdmin = async (req, res, next) => {
